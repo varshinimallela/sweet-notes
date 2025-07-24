@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Notes & Affirmations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink-light: #FFD6EC;
+            --pink-medium: #FFADD6;
+            --pink-dark: #FF85C0;
+            --purple-light: #E5D4F1;
+            --purple-medium: #D0B3E6;
+            --purple-dark: #B990DA;
+            --yellow-light: #FFF3D6;
+            --blue-light: #D6F5FF;
+            --green-light: #DEFFDE;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #FFF9FC;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.07;
+            pointer-events: none;
+        }
+        
+        .heart {
+            position: absolute;
+            font-size: 1.5rem;
+            color: var(--pink-medium);
+            opacity: 0.5;
+        }
+        
+        .quote-text {
+            font-family: 'Caveat', cursive;
+            font-size: 1.8rem;
+            line-height: 1.3;
+        }
+        
+        .note-card {
+            font-family: 'Caveat', cursive;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: rotate(0deg);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .note-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .note-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .note-card:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .add-button {
+            transition: all 0.3s ease;
+        }
+        
+        .add-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            z-index: 100;
+        }
+        
+        .note-textarea {
+            font-family: 'Caveat', cursive;
+            font-size: 1.3rem;
+            resize: none;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .note-textarea::placeholder {
+            color: rgba(156, 39, 176, 0.4);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--pink-light);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--pink-medium);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--pink-dark);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <!-- Background pattern -->
+    <div class="bg-pattern" id="bgPattern"></div>
+    
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-purple-600 mb-2">💖 Sweet Notes 💖</h1>
+            <div class="quote-text text-pink-500 mt-3" id="quoteText">
+                "Fill your life with love notes and kind words"
+            </div>
+        </header>
+        
+        <div class="bg-white bg-opacity-80 rounded-2xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-medium text-purple-600 mb-3">Add a New Note</h2>
+            <textarea id="noteInput" class="note-textarea w-full p-4 border-2 border-purple-200 rounded-xl focus:outline-none focus:border-purple-400 text-purple-800 mb-4" rows="3" placeholder="Write your love note or affirmation here..."></textarea>
+            <div class="flex justify-end">
+                <button id="addNoteBtn" class="add-button bg-gradient-to-r from-pink-400 to-purple-400 text-white px-6 py-3 rounded-xl hover:from-pink-500 hover:to-purple-500 focus:outline-none font-medium">
+                    Save Note 💝
+                </button>
+            </div>
+        </div>
+        
+        <div id="notesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <!-- Notes will be added here dynamically -->
+        </div>
+        
+        <div id="emptyState" class="text-center py-10 hidden">
+            <div class="text-pink-400 mb-3 text-6xl">
+                💝
+            </div>
+            <p class="text-purple-500 font-medium text-lg">No notes yet</p>
+            <p class="text-pink-400 text-sm mt-1">Add your first sweet note above!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const noteInput = document.getElementById('noteInput');
+            const addNoteBtn = document.getElementById('addNoteBtn');
+            const notesContainer = document.getElementById('notesContainer');
+            const emptyState = document.getElementById('emptyState');
+            const quoteText = document.getElementById('quoteText');
+            const bgPattern = document.getElementById('bgPattern');
+            
+            // Create heart background pattern
+            createHeartPattern();
+            
+            // Love quotes array
+            const quotes = [
+                "Fill your life with love notes and kind words",
+                "You are loved more than you know 💕",
+                "Be the reason someone smiles today",
+                "Your heart is full of beautiful possibilities",
+                "Speak to yourself with love and kindness",
+                "You deserve all the love in the world",
+                "Every day is a chance to spread more love",
+                "The best love story is the one you write yourself",
+                "Your love makes the world a better place",
+                "Kindness begins with being kind to yourself first"
+            ];
+            
+            // Set random quote
+            quoteText.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+            
+            // Load notes from localStorage
+            let notes = JSON.parse(localStorage.getItem('loveNotes')) || [];
+            
+            // Render notes
+            function renderNotes() {
+                notesContainer.innerHTML = '';
+                
+                if (notes.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    
+                    notes.forEach((note, index) => {
+                        const noteCard = createNoteCard(note, index);
+                        notesContainer.appendChild(noteCard);
+                    });
+                }
+            }
+            
+            // Create a note card
+            function createNoteCard(note, index) {
+                // Pastel colors array
+                const colors = [
+                    'bg-pink-100', 'bg-purple-100', 'bg-yellow-100', 
+                    'bg-blue-100', 'bg-green-100', 'bg-indigo-100'
+                ];
+                
+                // Emojis array
+                const emojis = ['💖', '💕', '💓', '💗', '💝', '💘', '💞', '✨', '🌸', '🌟'];
+                
+                // Get random color, rotation and emoji
+                const color = note.color || colors[Math.floor(Math.random() * colors.length)];
+                const rotation = note.rotation || (Math.random() * 6 - 3);
+                const emoji = note.emoji || emojis[Math.floor(Math.random() * emojis.length)];
+                
+                // Save color and rotation if not already saved
+                if (!note.color) {
+                    notes[index].color = color;
+                    notes[index].rotation = rotation;
+                    notes[index].emoji = emoji;
+                    saveNotes();
+                }
+                
+                const noteCard = document.createElement('div');
+                noteCard.className = `note-card ${color} p-5 rounded-lg min-h-[200px] flex flex-col`;
+                noteCard.style.transform = `rotate(${rotation}deg)`;
+                
+                const noteContent = document.createElement('div');
+                noteContent.className = 'text-purple-800 text-2xl flex-grow';
+                noteContent.textContent = note.text;
+                
+                const noteFooter = document.createElement('div');
+                noteFooter.className = 'mt-4 text-right text-2xl';
+                noteFooter.textContent = emoji;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn text-pink-400 hover:text-pink-600 focus:outline-none';
+                deleteBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                `;
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteNote(index, noteCard);
+                });
+                
+                noteCard.appendChild(deleteBtn);
+                noteCard.appendChild(noteContent);
+                noteCard.appendChild(noteFooter);
+                
+                return noteCard;
+            }
+            
+            // Add a new note
+            function addNote() {
+                const text = noteInput.value.trim();
+                if (text) {
+                    notes.push({
+                        text: text,
+                        date: new Date().toISOString()
+                    });
+                    saveNotes();
+                    noteInput.value = '';
+                    renderNotes();
+                    
+                    // Add confetti effect
+                    createConfetti();
+                }
+            }
+            
+            // Delete a note
+            function deleteNote(index, noteCard) {
+                // Animate the deletion
+                noteCard.style.transition = 'all 0.5s ease';
+                noteCard.style.transform = 'translateY(20px) scale(0.8) rotate(10deg)';
+                noteCard.style.opacity = '0';
+                
+                setTimeout(() => {
+                    notes.splice(index, 1);
+                    saveNotes();
+                    renderNotes();
+                }, 500);
+            }
+            
+            // Save notes to localStorage
+            function saveNotes() {
+                localStorage.setItem('loveNotes', JSON.stringify(notes));
+            }
+            
+            // Create heart pattern background
+            function createHeartPattern() {
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                const heartCount = Math.floor((windowWidth * windowHeight) / 10000); // Adjust density
+                
+                for (let i = 0; i < heartCount; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '♡';
+                    heart.style.left = `${Math.random() * 100}%`;
+                    heart.style.top = `${Math.random() * 100}%`;
+                    heart.style.fontSize = `${Math.random() * 1 + 0.8}rem`;
+                    heart.style.opacity = `${Math.random() * 0.3 + 0.1}`;
+                    heart.style.transform = `rotate(${Math.random() * 60 - 30}deg)`;
+                    bgPattern.appendChild(heart);
+                }
+            }
+            
+            // Create confetti effect
+            function createConfetti() {
+                const colors = ['#FFD6EC', '#FFADD6', '#E5D4F1', '#D0B3E6', '#B990DA', '#FFF3D6', '#D6F5FF'];
+                const shapes = ['circle', 'square', 'heart'];
+                
+                for (let i = 0; i < 40; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                    const size = Math.random() * 10 + 5;
+                    
+                    confetti.style.width = `${size}px`;
+                    confetti.style.height = `${size}px`;
+                    
+                    if (shape === 'circle') {
+                        confetti.style.backgroundColor = color;
+                        confetti.style.borderRadius = '50%';
+                    } else if (shape === 'square') {
+                        confetti.style.backgroundColor = color;
+                    } else if (shape === 'heart') {
+                        confetti.style.backgroundColor = 'transparent';
+                        confetti.style.width = 'auto';
+                        confetti.style.height = 'auto';
+                        confetti.textContent = '♥';
+                        confetti.style.color = color;
+                        confetti.style.fontSize = `${size * 1.5}px`;
+                    }
+                    
+                    const buttonRect = addNoteBtn.getBoundingClientRect();
+                    const startX = buttonRect.left + buttonRect.width / 2;
+                    const startY = buttonRect.top + buttonRect.height / 2;
+                    
+                    confetti.style.left = `${startX}px`;
+                    confetti.style.top = `${startY}px`;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    const destinationX = startX + (Math.random() * 200 - 100);
+                    const destinationY = startY - Math.random() * 200 - 50;
+                    const rotation = Math.random() * 360;
+                    const duration = Math.random() * 1.5 + 1;
+                    
+                    confetti.animate([
+                        { transform: 'translate(0, 0) rotate(0)', opacity: 1 },
+                        { transform: `translate(${destinationX - startX}px, ${destinationY - startY}px) rotate(${rotation}deg)`, opacity: 0 }
+                    ], {
+                        duration: duration * 1000,
+                        easing: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+                        fill: 'forwards'
+                    });
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, duration * 1000);
+                }
+            }
+            
+            // Event listeners
+            addNoteBtn.addEventListener('click', addNote);
+            noteInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    addNote();
+                }
+            });
+            
+            // Initial render
+            renderNotes();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9644d4c0b3132e8d',t:'MTc1MzM3NDkzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
